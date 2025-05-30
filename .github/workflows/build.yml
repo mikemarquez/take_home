@@ -28,6 +28,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Create labels
+        run: |
+          # Create security label if it doesn't exist
+          gh label create "security" --color "FF0000" --description "Security related issues" || true
+          # Create high-priority label if it doesn't exist
+          gh label create "high-priority" --color "FF0000" --description "High priority issues" || true
+
       - name: Run security audit
         run: |
           # Run npm audit and store the output
