@@ -8,7 +8,9 @@
     "watch": "tsc -w",
     "lint": "eslint -c .eslintrc --ext .ts ./src",
     "start": "npm run build && electron ./dist/main.js",
-    "package": "yarn electron-builder --publish never",
+    "package": "electron-builder --publish never",
+    "package:mac": "electron-builder --mac --publish never",
+    "package:mac:zip": "electron-builder --mac zip --publish never",
     "electronegativity": "electronegativity -i ./src"
   },
   "repository": "https://github.com/1password/electron-secure-defaults",
@@ -36,23 +38,21 @@
     "eslint": "^7.3.1",
     "typescript": "^4.9.5"
   },
-  "main": "main.js",
+  "main": "dist/main.js",
   "build": {
+    "appId": "com.electron.secure-defaults",
+    "productName": "Electron Secure Defaults",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": ["zip"]
+    },
     "directories": {
-      "buildResources": "dist",
+      "buildResources": "build",
       "output": "package"
     },
     "files": [
-      "!node_modules",
-      "package.json",
-      "index.html",
-      {
-        "from": "./dist",
-        "to": ".",
-        "filter": [
-          "**/*"
-        ]
-      }
+      "dist/**/*",
+      "package.json"
     ],
     "extraResources": [
       "index.html"
