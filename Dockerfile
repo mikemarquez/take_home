@@ -13,10 +13,9 @@ RUN apt-get update && apt-get install -y \
 
 # Copy package files
 COPY package*.json ./
-COPY yarn.lock ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy source code
 COPY . .
