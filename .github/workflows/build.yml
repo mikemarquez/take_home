@@ -30,11 +30,11 @@ jobs:
         run: |
           # Run npm audit and store the output
           AUDIT_OUTPUT=$(npm audit --json || true)
+          echo "$AUDIT_OUTPUT" > audit-report.json
           
-          # Check for high or critical vulnerabilities
-          if echo "$AUDIT_OUTPUT" | grep -q '"severity":"high"\|"severity":"critical"'; then
+          # Use jq to check for high or critical vulnerabilities
+          if jq -e '.metadata.vulnerabilities.high > 0 or .metadata.vulnerabilities.critical > 0' audit-report.json > /dev/null; then
             echo "Found high or critical vulnerabilities!"
-            echo "$AUDIT_OUTPUT" > audit-report.json
             
             # Create a detailed report
             echo "## Security Audit Report" > security-report.md
