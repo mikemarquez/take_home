@@ -47,10 +47,27 @@ jobs:
             
             # Create a detailed report
             echo "## Security Audit Report" > security-report.md
-            echo "### High and Critical Vulnerabilities Found" >> security-report.md
-            echo "\`\`\`json" >> security-report.md
-            cat audit-report.json >> security-report.md
-            echo "\`\`\`" >> security-report.md
+            echo "### Summary" >> security-report.md
+            echo "| Severity | Count |" >> security-report.md
+            echo "|----------|-------|" >> security-report.md
+            echo "| Critical | $(jq -r '.metadata.vulnerabilities.critical' audit-report.json) |" >> security-report.md
+            echo "| High     | $(jq -r '.metadata.vulnerabilities.high' audit-report.json) |" >> security-report.md
+            echo "| Moderate | $(jq -r '.metadata.vulnerabilities.moderate' audit-report.json) |" >> security-report.md
+            echo "| Low      | $(jq -r '.metadata.vulnerabilities.low' audit-report.json) |" >> security-report.md
+            echo "" >> security-report.md
+            
+            echo "### High and Critical Vulnerabilities" >> security-report.md
+            echo "" >> security-report.md
+            
+            # Extract and format each high/critical vulnerability
+            jq -r '.advisories | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | 
+              "#### \(.value.title) (Severity: \(.value.severity))\n" +
+              "- **Package:** \(.value.module_name)\n" +
+              "- **Version:** \(.value.vulnerable_versions)\n" +
+              "- **Fixed in:** \(.value.patched_versions)\n" +
+              "- **Overview:** \(.value.overview)\n" +
+              "- **Recommendation:** \(.value.recommendation)\n" +
+              "- **References:** \(.value.references)\n"' audit-report.json >> security-report.md
             
             # Create an issue with the findings
             gh issue create \
