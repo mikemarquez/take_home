@@ -131,30 +131,28 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Build Docker image
-      uses: docker/build-push-action@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        context: .
-        push: false
-        load: true
-        tags: electron-secure-defaults:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        node-version: '18'
+        cache: 'npm'
 
-    - name: Run build in container
-      run: |
-        docker run --rm \
-          -v "$(pwd)/package:/app/package" \
-          electron-secure-defaults:latest
+    - name: Install dependencies
+      run: npm ci
 
-    - name: Build DMG locally
+    - name: Build application
+      run: npm run build
+
+    - name: Package application
       run: |
-        npm ci
-        npm run build
+        # Create package directory
+        mkdir -p package
+        
+        # Build DMG
         npm run package:mac
+        
+        # Build ZIP
+        npm run package:mac:zip
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
