@@ -83,6 +83,7 @@ jobs:
             
             # Extract and format each high/critical vulnerability
             if jq -e '.advisories' audit-report.json > /dev/null; then
+              # Get all advisories and filter for high/critical
               jq -r '.advisories | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | 
                 "#### \(.value.title) (Severity: \(.value.severity))\n" +
                 "- **Package:** \(.value.module_name)\n" +
@@ -90,9 +91,26 @@ jobs:
                 "- **Fixed in:** \(.value.patched_versions)\n" +
                 "- **Overview:** \(.value.overview)\n" +
                 "- **Recommendation:** \(.value.recommendation)\n" +
-                "- **References:** \(.value.references)\n"' audit-report.json >> security-report.md
+                "- **References:** \(.value.references)\n" +
+                "- **Path:** \(.value.findings[0].paths[0])\n"' audit-report.json >> security-report.md
             else
-              echo "No detailed vulnerability information available." >> security-report.md
+              # Try alternative format (some npm versions use different structure)
+              if jq -e '.vulnerabilities' audit-report.json > /dev/null; then
+                jq -r '.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | 
+                  "#### \(.value.name) (Severity: \(.value.severity))\n" +
+                  "- **Package:** \(.value.name)\n" +
+                  "- **Version:** \(.value.range)\n" +
+                  "- **Fixed in:** \(.value.fixAvailable.version // "No fix available")\n" +
+                  "- **Overview:** \(.value.description // "No description available")\n" +
+                  "- **Recommendation:** Update to version \(.value.fixAvailable.version // "latest")\n" +
+                  "- **References:** \(.value.references // "No references available")\n"' audit-report.json >> security-report.md
+              else
+                echo "No detailed vulnerability information available in the expected format." >> security-report.md
+                echo "Raw audit output:" >> security-report.md
+                echo "\`\`\`json" >> security-report.md
+                cat audit-report.json >> security-report.md
+                echo "\`\`\`" >> security-report.md
+              fi
             fi
             
             # Create an issue with the findings
