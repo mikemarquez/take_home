@@ -136,26 +136,40 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
       with:
-        node-version: '18'
-        cache: 'npm'
+        driver-opts: |
+          image=moby/buildkit:latest
+          network=host
 
-    - name: Install dependencies
-      run: npm ci
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build application
-      run: npm run build
+    - name: Pull the latest image
+      run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main || true
 
-    - name: Package application
+    - name: Build and run container
       run: |
         # Create package directory
         mkdir -p package
         
-        # Build both DMG and ZIP
+        # Run the container with proper volume mounting
+        docker run --rm \
+          -v "$(pwd):/app" \
+          -w /app \
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main \
+          sh -c "npm ci && npm run build && npm run package:mac:zip"
+
+    - name: Build DMG locally
+      run: |
+        npm ci
+        npm run build
         npm run package:mac
-        npm run package:mac:zip
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
