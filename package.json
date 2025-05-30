@@ -33,8 +33,8 @@
     "@doyensec/electronegativity": "^1.9.0",
     "@typescript-eslint/eslint-plugin": "^3.4.0",
     "@typescript-eslint/parser": "^3.4.0",
-    "electron": "^21.0.0",
-    "electron-builder": "^23.6.0",
+    "electron": "^36.3.2",
+    "electron-builder": "^26.0.12",
     "eslint": "^7.3.1",
     "typescript": "^4.9.5"
   },
