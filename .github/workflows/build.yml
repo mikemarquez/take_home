@@ -100,9 +100,9 @@ jobs:
                   "#### \(.value.name) (Severity: \(.value.severity))\n" +
                   "- **Package:** \(.value.name)\n" +
                   "- **Version:** \(.value.range)\n" +
-                  "- **Fixed in:** \(.value.fixAvailable.version // "No fix available")\n" +
+                  "- **Fixed in:** \(if .value.fixAvailable == true then "Available (run npm audit fix)" elif .value.fixAvailable == false then "No fix available" else .value.fixAvailable.version // "No fix available" end)\n" +
                   "- **Overview:** \(.value.description // "No description available")\n" +
-                  "- **Recommendation:** Update to version \(.value.fixAvailable.version // "latest")\n" +
+                  "- **Recommendation:** \(if .value.fixAvailable == true then "Run npm audit fix" elif .value.fixAvailable == false then "No fix available" else "Update to version \(.value.fixAvailable.version // "latest")" end)\n" +
                   "- **References:** \(.value.references // "No references available")\n"' audit-report.json >> security-report.md
               else
                 echo "No detailed vulnerability information available in the expected format." >> security-report.md
