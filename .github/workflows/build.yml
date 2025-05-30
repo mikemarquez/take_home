@@ -31,7 +31,7 @@ jobs:
         zip -r ../electron-secure-defaults.zip .
 
     - name: Upload bundle
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: electron-secure-defaults
         path: electron-secure-defaults.zip 
