@@ -23,10 +23,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'yarn'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Create labels
         run: |
@@ -152,7 +152,7 @@ jobs:
 
     - name: Build DMG locally
       run: |
-        npm install
+        npm ci
         npm run build
         npm run package:mac
 
