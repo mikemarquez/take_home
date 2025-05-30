@@ -1,0 +1,37 @@
+name: Build and Bundle
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+
+    - name: Build application
+      run: yarn build
+
+    - name: Create bundle
+      run: |
+        cd dist
+        zip -r ../electron-secure-defaults.zip .
+
+    - name: Upload bundle
+      uses: actions/upload-artifact@v3
+      with:
+        name: electron-secure-defaults
+        path: electron-secure-defaults.zip 
