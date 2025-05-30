@@ -39,7 +39,22 @@ jobs:
         run: |
           # Run npm audit and store the output
           AUDIT_OUTPUT=$(npm audit --json || true)
+          
+          # Check if the output is valid JSON and not empty
+          if ! echo "$AUDIT_OUTPUT" | jq empty 2>/dev/null; then
+            echo "Error: Invalid JSON output from npm audit"
+            echo "Raw output:"
+            echo "$AUDIT_OUTPUT"
+            exit 1
+          fi
+          
           echo "$AUDIT_OUTPUT" > audit-report.json
+          
+          # Check if there are any vulnerabilities
+          if ! jq -e '.metadata.vulnerabilities' audit-report.json > /dev/null; then
+            echo "No vulnerability data found in audit report"
+            exit 0
+          fi
           
           # Use jq to check for high or critical vulnerabilities
           if jq -e '.metadata.vulnerabilities.high > 0 or .metadata.vulnerabilities.critical > 0' audit-report.json > /dev/null; then
@@ -50,24 +65,35 @@ jobs:
             echo "### Summary" >> security-report.md
             echo "| Severity | Count |" >> security-report.md
             echo "|----------|-------|" >> security-report.md
-            echo "| Critical | $(jq -r '.metadata.vulnerabilities.critical' audit-report.json) |" >> security-report.md
-            echo "| High     | $(jq -r '.metadata.vulnerabilities.high' audit-report.json) |" >> security-report.md
-            echo "| Moderate | $(jq -r '.metadata.vulnerabilities.moderate' audit-report.json) |" >> security-report.md
-            echo "| Low      | $(jq -r '.metadata.vulnerabilities.low' audit-report.json) |" >> security-report.md
+            
+            # Safely extract vulnerability counts with fallback to 0
+            CRITICAL=$(jq -r '.metadata.vulnerabilities.critical // 0' audit-report.json)
+            HIGH=$(jq -r '.metadata.vulnerabilities.high // 0' audit-report.json)
+            MODERATE=$(jq -r '.metadata.vulnerabilities.moderate // 0' audit-report.json)
+            LOW=$(jq -r '.metadata.vulnerabilities.low // 0' audit-report.json)
+            
+            echo "| Critical | $CRITICAL |" >> security-report.md
+            echo "| High     | $HIGH |" >> security-report.md
+            echo "| Moderate | $MODERATE |" >> security-report.md
+            echo "| Low      | $LOW |" >> security-report.md
             echo "" >> security-report.md
             
             echo "### High and Critical Vulnerabilities" >> security-report.md
             echo "" >> security-report.md
             
             # Extract and format each high/critical vulnerability
-            jq -r '.advisories | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | 
-              "#### \(.value.title) (Severity: \(.value.severity))\n" +
-              "- **Package:** \(.value.module_name)\n" +
-              "- **Version:** \(.value.vulnerable_versions)\n" +
-              "- **Fixed in:** \(.value.patched_versions)\n" +
-              "- **Overview:** \(.value.overview)\n" +
-              "- **Recommendation:** \(.value.recommendation)\n" +
-              "- **References:** \(.value.references)\n"' audit-report.json >> security-report.md
+            if jq -e '.advisories' audit-report.json > /dev/null; then
+              jq -r '.advisories | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | 
+                "#### \(.value.title) (Severity: \(.value.severity))\n" +
+                "- **Package:** \(.value.module_name)\n" +
+                "- **Version:** \(.value.vulnerable_versions)\n" +
+                "- **Fixed in:** \(.value.patched_versions)\n" +
+                "- **Overview:** \(.value.overview)\n" +
+                "- **Recommendation:** \(.value.recommendation)\n" +
+                "- **References:** \(.value.references)\n"' audit-report.json >> security-report.md
+            else
+              echo "No detailed vulnerability information available." >> security-report.md
+            fi
             
             # Create an issue with the findings
             gh issue create \
