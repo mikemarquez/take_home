@@ -34,4 +34,38 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: electron-secure-defaults
-        path: electron-secure-defaults.zip 
+        path: electron-secure-defaults.zip
+
+  notify:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create build notification
+        if: needs.build.result == 'success'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const buildUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const commitUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha}`;
+            
+            const body = `
+            ## Build Completed Successfully! 🎉
+
+            ### Build Details:
+            - **Build URL:** [View Build](${buildUrl})
+            - **Commit:** [${context.sha.substring(0, 7)}](${commitUrl})
+            - **Branch:** ${context.ref.replace('refs/heads/', '')}
+            - **Triggered by:** ${context.actor}
+            - **Build completed at:** ${new Date().toISOString()}
+
+            You can download the build artifact from the GitHub Actions page.
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Build Success: ${context.ref.replace('refs/heads/', '')} - ${new Date().toISOString()}`,
+              body: body,
+              labels: ['build-success']
+            }); 
